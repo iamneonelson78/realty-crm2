@@ -30,8 +30,8 @@ export default function Navbar({ onBookDemo }) {
             <a href="#problem" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 transition-colors">Why Us</a>
             <a href="#solution" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 transition-colors">Features</a>
             <div className="flex items-center space-x-4">
-              {/* <Link to="/login" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Login</Link> */}
               <button onClick={onBookDemo} className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Book a Demo</button>
+              <Link to="/login" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Login</Link>
               <Link to="/signup" className="text-sm font-medium bg-brand-600 text-white px-5 py-2.5 rounded-full hover:bg-brand-700 shadow-md shadow-brand-500/20 transition-all transform hover:-translate-y-0.5">
                 Start Free
               </Link>
