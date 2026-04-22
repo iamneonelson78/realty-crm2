@@ -1,0 +1,145 @@
+import { Outlet, Link, useLocation } from 'react-router-dom';
+import { LayoutDashboard, KanbanSquare, Building, Menu, X, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import TopHeader from '../../components/TopHeader';
+import FeedbackWidget from '../../components/FeedbackWidget';
+import Watermark from '../../components/Watermark';
+import { useAuth } from '../../context/AuthContext';
+import { getConnectionsEnabled } from '../../lib/connections';
+
+export default function DashboardLayout() {
+  const location = useLocation();
+  const appVersion = import.meta.env.VITE_APP_VERSION || '0.0.1';
+  const { user } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('realty:agent-nav-collapsed') === 'true';
+  });
+  const [connectionsEnabled, setConnectionsEnabled] = useState(!!user?.connections_enabled);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) return;
+    getConnectionsEnabled(user.id).then((val) => {
+      if (!cancelled) setConnectionsEnabled(val || !!user?.connections_enabled);
+    });
+    return () => { cancelled = true; };
+  }, [user?.id, user?.connections_enabled]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('realty:agent-nav-collapsed', String(isCollapsed));
+  }, [isCollapsed]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleStorage = (event) => {
+      if (event.key !== 'realty:agent-nav-collapsed') return;
+      setIsCollapsed(event.newValue === 'true');
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  const showConnectionsNav = connectionsEnabled || import.meta.env.DEV;
+  const isPipelinePage = location.pathname.startsWith('/dashboard/pipeline');
+
+  const navItems = [
+    { path: '/dashboard', exact: true, icon: <LayoutDashboard className="w-5 h-5 flex-shrink-0" />, label: 'Dashboard' },
+    { path: '/dashboard/pipeline', exact: false, icon: <KanbanSquare className="w-5 h-5 flex-shrink-0" />, label: 'Pipeline' },
+    { path: '/dashboard/listings', exact: false, icon: <Building className="w-5 h-5 flex-shrink-0" />, label: 'My Listings' },
+    ...(showConnectionsNav
+      ? [{ path: '/dashboard/connections', exact: false, icon: <Zap className="w-5 h-5 flex-shrink-0" />, label: 'Connections' }]
+      : []),
+  ];
+
+  return (
+    <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col transition-colors overflow-hidden">
+      {/* Universal Top Header */}
+      <TopHeader />
+
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Mobile Backdrop */}
+        {mobileMenuOpen && (
+          <div className="md:hidden fixed inset-0 z-20 bg-slate-900/60 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+        )}
+
+        {/* Sidebar */}
+        <aside className={`fixed md:relative inset-y-0 left-0 z-30 ${isCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-lg md:shadow-none transform transition-[width,transform] duration-300 ease-in-out overflow-visible ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+          
+          {/* Mobile Header (Hidden on Desktop) */}
+          <div className="md:hidden p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+            <span className="font-bold text-slate-800 dark:text-white">Menu</span>
+            <button className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" onClick={() => setMobileMenuOpen(false)}>
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Collapse Button — straddling right border, inline with first nav item */}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="hidden md:flex absolute top-3 -right-3.5 items-center justify-center w-7 h-7 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-full text-slate-500 dark:text-slate-400 hover:bg-brand-600 hover:text-white hover:border-brand-600 shadow-md transition-all duration-200 z-50"
+          >
+            {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+          </button>
+
+          <nav className="flex-1 px-3 space-y-2 overflow-y-auto pt-10">
+            {navItems.map((item) => {
+              const isActive = item.exact ? location.pathname === item.path : location.pathname.includes(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center font-medium transition-all duration-300 ease-in-out group ${
+                    isCollapsed
+                      ? 'justify-center w-11 h-11 mx-auto rounded-full p-0'
+                      : 'gap-3 px-3 py-3 rounded-full w-full'
+                  } ${
+                    isActive 
+                      ? 'bg-brand-700 text-white shadow-lg shadow-brand-500/30 dark:shadow-brand-900/40 -translate-y-0.5' 
+                      : 'text-slate-600 hover:bg-slate-200 hover:text-slate-900 hover:shadow-md hover:-translate-y-0.5 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white dark:hover:shadow-slate-900/50'
+                  }`}
+                  title={isCollapsed ? item.label : ''}
+                >
+                  {item.icon}
+                  <span
+                    className={`text-sm whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${
+                      isCollapsed ? 'max-w-0 opacity-0 ml-0' : 'max-w-[140px] opacity-100 ml-0'
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="px-3 py-3 border-t border-slate-100 dark:border-slate-800">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center">Version v{appVersion}</p>
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="flex-1 flex flex-col min-w-0 overflow-y-auto relative bg-slate-50/50 dark:bg-slate-950/50">
+          {/* Mobile hamburger row overlay below header if needed, but TopHeader is fixed in mobile flow. 
+              Actually TopHeader is global, so we just drop a mobile nav trigger here if we want, 
+              but TopHeader doesn't have the hamburger. Let's add a minimal sub-header for mobile menu trigger */}
+          <div className="md:hidden py-2 px-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
+             <button className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium text-sm" onClick={() => setMobileMenuOpen(true)}>
+               <Menu className="w-5 h-5" /> Open Navigation
+             </button>
+          </div>
+
+          <div className={`w-full ${isPipelinePage ? 'max-w-none' : 'max-w-6xl mx-auto'} px-4 sm:px-8 py-6 sm:py-8`}>
+            <Outlet />
+          </div>
+        </main>
+      </div>
+
+      <FeedbackWidget />
+      <Watermark fixed />
+    </div>
+  );
+}
