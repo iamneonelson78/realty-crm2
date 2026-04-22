@@ -29,10 +29,22 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      await signup(email, password, name);
+      const result = await signup(email, password, name);
       setShowConfetti(true);
       setSignupSuccess(true);
       setTimeout(() => setShowConfetti(false), 5000);
+
+      // Fire-and-forget admin notification. Never block the UI or bubble
+      // errors back to the user — if it fails the admin can still see the
+      // pending user in the Access Control screen.
+      const newUserId = result?.user?.id;
+      if (newUserId) {
+        fetch('/api/notify-admin-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: newUserId }),
+        }).catch((err) => console.warn('notify-admin-signup failed:', err));
+      }
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to create account');

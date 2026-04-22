@@ -4,6 +4,7 @@ import { Mail, Lock, ArrowRight, AlertCircle, X, CheckCircle } from 'lucide-reac
 import Logo from '../components/Logo';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { supabase } from '../lib/supabaseClient';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -61,9 +62,18 @@ export default function LoginPage() {
       return;
     }
     setForgotSending(true);
-    // Mocked for now — real reset logic will be added later.
-    await new Promise((r) => setTimeout(r, 800));
+    // Fire the reset flow through Supabase. Supabase's Send Email Hook picks
+    // this up and forwards to our /api/auth-email-hook, which sends via Resend.
+    // Link in the email lands on /reset-password?token_hash=...&type=recovery.
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
     setForgotSending(false);
+    if (resetError) {
+      // Log the real reason for ourselves but still show the generic message to
+      // avoid leaking which emails are registered.
+      console.warn('resetPasswordForEmail failed:', resetError.message);
+    }
     setForgotSent(true);
   };
 

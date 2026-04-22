@@ -100,14 +100,32 @@ export default function AdminAccess() {
     toast.success(`${target?.name || 'User'} status set to ${status}.`);
 
     if (status === 'active' && target?.status === 'pending' && target?.email) {
-      const { error: emailError } = await supabase.auth.signInWithOtp({
-        email: target.email,
-        options: { shouldCreateUser: false },
-      });
-      if (emailError) {
-        toast.warning(`Approved, but email notification failed: ${emailError.message}`);
-      } else {
-        toast.info(`Approval email sent to ${target.email}.`);
+      // Send the "you've been approved" email via Resend through our Vercel
+      // serverless function. Requires an authenticated admin bearer token so
+      // the API can verify the caller before emailing arbitrary users.
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if (!accessToken) {
+          toast.warning('Approved, but could not send email: session missing.');
+        } else {
+          const res = await fetch('/api/notify-user-approved', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ userId: id }),
+          });
+          if (res.ok) {
+            toast.info(`Approval email sent to ${target.email}.`);
+          } else {
+            const body = await res.json().catch(() => ({}));
+            toast.warning(`Approved, but email notification failed: ${body.error || res.status}`);
+          }
+        }
+      } catch (e) {
+        toast.warning(`Approved, but email notification failed: ${e.message}`);
       }
     }
   };
@@ -118,7 +136,7 @@ export default function AdminAccess() {
       return;
     }
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(target.email, {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     if (resetError) {
       toast.error(`Failed to send reset email: ${resetError.message}`);
