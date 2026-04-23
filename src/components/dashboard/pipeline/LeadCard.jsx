@@ -4,6 +4,13 @@ import { CSS } from '@dnd-kit/utilities';
 import { MessageCircle, MoreHorizontal, ArrowRight, Check } from 'lucide-react';
 import { STAGES } from './stages';
 
+const REASON_STYLE = {
+  'Closed Won':  'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30',
+  'Closed Lost': 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30',
+  'Cancelled':   'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30',
+  'Duplicate':   'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800',
+};
+
 export default function LeadCard({ lead, onMove, draggable = true }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `lead-${lead.id}`,
@@ -14,6 +21,8 @@ export default function LeadCard({ lead, onMove, draggable = true }) {
   const style = {
     transform: CSS.Translate.toString(transform),
   };
+
+  const isCancelled = lead.close_reason === 'Cancelled';
 
   return (
     <div
@@ -29,14 +38,20 @@ export default function LeadCard({ lead, onMove, draggable = true }) {
         className={`p-4 ${draggable ? 'md:cursor-grab md:active:cursor-grabbing' : ''} touch-none select-none`}
       >
         <div className="flex justify-between items-start gap-2 mb-2">
-          <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-sm leading-tight truncate">
+          <h4 className={`font-semibold text-slate-900 dark:text-slate-100 text-sm leading-tight truncate ${isCancelled ? 'line-through opacity-50' : ''}`}>
             {lead.name}
           </h4>
         </div>
 
-        <span className="inline-flex max-w-full items-center text-[11px] font-medium text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/30 border border-brand-100 dark:border-brand-800/50 px-2 py-0.5 rounded-md truncate">
+        <span className={`inline-flex max-w-full items-center text-[11px] font-medium text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/30 border border-brand-100 dark:border-brand-800/50 px-2 py-0.5 rounded-md truncate ${isCancelled ? 'line-through opacity-50' : ''}`}>
           {lead.unit}
         </span>
+
+        {lead.status === 'closed' && lead.close_reason && (
+          <div className={`mt-2 inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${REASON_STYLE[lead.close_reason] ?? REASON_STYLE['Duplicate']}`}>
+            {lead.close_reason}
+          </div>
+        )}
 
         <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/60">
           <a
