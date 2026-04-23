@@ -170,70 +170,115 @@ export default function AdminFeedback() {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-x-auto">
-        <table className="w-full text-left text-sm min-w-[700px]">
-          <thead className="bg-slate-800 text-slate-100 border-b border-slate-700 dark:bg-black dark:text-slate-200 dark:border-slate-800">
-            <tr>
-              <th className="px-4 py-3 font-semibold">Date</th>
-              <th className="px-4 py-3 font-semibold">Category / Rating</th>
-              <th className="px-4 py-3 font-semibold">Submitter</th>
-              <th className="px-4 py-3 font-semibold">Message preview</th>
-              <th className="px-4 py-3 font-semibold">Page</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 font-semibold text-right">Files</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {loading ? (
-              <tr><td colSpan="7" className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
-            ) : items.length === 0 ? (
-              <tr><td colSpan="7" className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">No feedback found.</td></tr>
-            ) : items.map((item, idx) => (
-              <tr
-                key={item.id}
-                className={`cursor-pointer transition-colors ${
-                  idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/70 dark:bg-slate-800/40'
-                } hover:bg-slate-100 dark:hover:bg-slate-800/70`}
-                onClick={() => openDrawer(item)}
-              >
-                <td className="px-4 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap text-xs">
-                  {new Date(item.created_at).toLocaleDateString()}
-                </td>
-                <td className="px-4 py-3">
-                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{item.category || '—'}</span>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+
+        {/* Mobile: card view */}
+        <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800 sm:hidden">
+          {loading ? (
+            <p className="px-4 py-8 text-center text-slate-400 text-sm">Loading…</p>
+          ) : items.length === 0 ? (
+            <p className="px-4 py-8 text-center text-slate-500 dark:text-slate-400 text-sm">No feedback found.</p>
+          ) : items.map((item, idx) => (
+            <div
+              key={item.id}
+              className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors active:bg-slate-100 dark:active:bg-slate-800/70 ${idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/70 dark:bg-slate-800/40'}`}
+              onClick={() => openDrawer(item)}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{item.category || '—'}</span>
                   {item.rating && (
-                    <div className="flex gap-0.5 mt-0.5">
+                    <span className="flex gap-0.5">
                       {[1,2,3,4,5].map((n) => (
                         <Star key={n} className={`w-3 h-3 ${n <= item.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200 dark:text-slate-700'}`} />
                       ))}
-                    </div>
+                    </span>
                   )}
-                </td>
-                <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 max-w-[120px] truncate">
-                  {item.email || (item.user_id ? 'Logged-in user' : 'Anonymous')}
-                </td>
-                <td className="px-4 py-3 text-slate-700 dark:text-slate-300 max-w-[200px]">
-                  <span className="text-sm line-clamp-2">{item.message}</span>
-                </td>
-                <td className="px-4 py-3 text-xs text-slate-400 dark:text-slate-500 max-w-[100px] truncate">
-                  {item.page_url || '—'}
-                </td>
-                <td className="px-4 py-3">
+                  {(item.attachments?.length || 0) > 0 && (
+                    <span className="flex items-center gap-0.5 text-slate-400 text-xs">
+                      <Paperclip className="w-3 h-3" />{item.attachments.length}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-slate-700 dark:text-slate-300 mt-1 line-clamp-2">{item.message}</p>
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[item.status] || ''}`}>
                     {item.status}
                   </span>
-                </td>
-                <td className="px-4 py-3 text-right text-xs text-slate-400 dark:text-slate-500">
-                  {(item.attachments?.length || 0) > 0 ? (
-                    <span className="flex items-center justify-end gap-1">
-                      <Paperclip className="w-3 h-3" />{item.attachments.length}
-                    </span>
-                  ) : '—'}
-                </td>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">{new Date(item.created_at).toLocaleDateString()}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500 truncate">{item.email || (item.user_id ? 'Logged-in user' : 'Anonymous')}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop: table */}
+        <div className="hidden sm:block overflow-x-auto">
+          <table className="w-full text-left text-sm min-w-[700px]">
+            <thead className="bg-slate-800 text-slate-100 border-b border-slate-700 dark:bg-black dark:text-slate-200 dark:border-slate-800">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Date</th>
+                <th className="px-4 py-3 font-semibold">Category / Rating</th>
+                <th className="px-4 py-3 font-semibold">Submitter</th>
+                <th className="px-4 py-3 font-semibold">Message preview</th>
+                <th className="px-4 py-3 font-semibold">Page</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold text-right">Files</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {loading ? (
+                <tr><td colSpan="7" className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+              ) : items.length === 0 ? (
+                <tr><td colSpan="7" className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">No feedback found.</td></tr>
+              ) : items.map((item, idx) => (
+                <tr
+                  key={item.id}
+                  className={`cursor-pointer transition-colors ${
+                    idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/70 dark:bg-slate-800/40'
+                  } hover:bg-slate-100 dark:hover:bg-slate-800/70`}
+                  onClick={() => openDrawer(item)}
+                >
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap text-xs">
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{item.category || '—'}</span>
+                    {item.rating && (
+                      <div className="flex gap-0.5 mt-0.5">
+                        {[1,2,3,4,5].map((n) => (
+                          <Star key={n} className={`w-3 h-3 ${n <= item.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200 dark:text-slate-700'}`} />
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 max-w-[120px] truncate">
+                    {item.email || (item.user_id ? 'Logged-in user' : 'Anonymous')}
+                  </td>
+                  <td className="px-4 py-3 text-slate-700 dark:text-slate-300 max-w-[200px]">
+                    <span className="text-sm line-clamp-2">{item.message}</span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-slate-400 dark:text-slate-500 max-w-[100px] truncate">
+                    {item.page_url || '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[item.status] || ''}`}>
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right text-xs text-slate-400 dark:text-slate-500">
+                    {(item.attachments?.length || 0) > 0 ? (
+                      <span className="flex items-center justify-end gap-1">
+                        <Paperclip className="w-3 h-3" />{item.attachments.length}
+                      </span>
+                    ) : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Detail Drawer */}

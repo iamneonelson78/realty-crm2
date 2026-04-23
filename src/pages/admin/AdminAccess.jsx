@@ -371,7 +371,59 @@ export default function AdminAccess() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile: card view */}
+        <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800 sm:hidden">
+          {loading ? (
+            <p className="px-4 py-8 text-center text-slate-400 text-sm">Loading…</p>
+          ) : error ? (
+            <p className="px-4 py-8 text-center text-rose-500 text-sm">{error}</p>
+          ) : sorted.length === 0 ? (
+            <p className="px-4 py-8 text-center text-slate-400 text-sm">No users found.</p>
+          ) : sorted.map((user, idx) => (
+            <div
+              key={user.id}
+              className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors active:bg-slate-100 dark:active:bg-slate-800/70 ${idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/70 dark:bg-slate-800/40'}`}
+              onClick={() => openDetails(user, 'view')}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-slate-900 dark:text-slate-200 text-sm truncate">{user.name || '—'}</span>
+                  {user.temp_password_required && (
+                    <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 shrink-0">⚠ Temp pwd</span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{user.email || 'No email'}</p>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium border border-slate-200 dark:border-slate-700 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 capitalize">
+                    {user.role || 'agent'}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusBadge(user.status)}`}>
+                    {statusIcon(user.status)} {user.status ?? 'pending'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => openDetails(user, 'view')}
+                  className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  title="View"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => openDetails(user, 'edit')}
+                  className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  title="Edit"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop: table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[980px]">
             <thead className="bg-slate-800 text-slate-100 border-b border-slate-700 dark:bg-black dark:text-slate-200 dark:border-slate-800">
               <tr>
