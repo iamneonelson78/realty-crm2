@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(mkdir -p D:/tmp/docx-gen)",
+      "Read(//d/tmp/**)",
+      "Bash(npm init *)",
+      "Bash(npm install *)"
     ]
   }
 }
