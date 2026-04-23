@@ -257,13 +257,15 @@ export default function TopHeader() {
   return (
     <>
       <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-6 w-full z-40 transition-colors shadow-sm">
-        <div className="flex items-center gap-3">
-          <Link to="/" className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link to="/dashboard" className="flex items-center gap-2 flex-shrink-0">
             <Logo className="w-8 h-8" />
             <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Realty <span className="text-brand-600 dark:text-brand-400">CRM</span></span>
           </Link>
-          <RoleBadge role={user?.role} />
-          <EnvironmentBadge />
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2 ml-1">
+            <RoleBadge role={user?.role} />
+            <EnvironmentBadge />
+          </div>
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2">

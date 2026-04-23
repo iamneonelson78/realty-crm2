@@ -80,7 +80,7 @@ export default function LoginPage() {
 
   return (
     <>
-      <div className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-brand-50 via-slate-50 to-brand-100 dark:from-slate-950 dark:via-slate-900 dark:to-brand-950 py-12 sm:px-6 lg:px-8 transition-colors relative overflow-hidden">
+      <div className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-brand-50 via-slate-50 to-brand-100 dark:from-slate-950 dark:via-slate-900 dark:to-brand-950 py-12 px-4 sm:px-6 lg:px-8 transition-colors relative overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-300/30 dark:bg-brand-500/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-brand-400/20 dark:bg-brand-600/10 rounded-full blur-[120px] pointer-events-none" />
 
@@ -200,10 +200,15 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-500">
-          Copyright © 2026 — Powered by Corevia Technologies
+        <p className="hidden sm:block mt-6 text-center text-xs text-slate-500 dark:text-slate-500">
+          Copyright &copy; 2026 — Powered by Corevia Technologies
         </p>
       </div>
+
+      {/* Mobile-only fixed copyright */}
+      <p className="sm:hidden fixed bottom-3 left-0 right-0 text-center text-xs text-slate-400 dark:text-slate-600 pointer-events-none z-30">
+        Copyright &copy; 2026 — Powered by Corevia Technologies
+      </p>
 
       {showForgotModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">

@@ -150,8 +150,12 @@ export default function FeedbackWidget() {
 
   return (
     <>
-      {/* Tab trigger */}
-      <div className={`fixed right-0 top-1/2 -translate-y-1/2 z-40 transform transition-transform duration-300 ${isOpen ? 'translate-x-full' : 'translate-x-[68%] hover:translate-x-0'}`}>
+      {/* Tab trigger — mid-right on desktop, bottom-right on mobile */}
+      <div className={`
+        fixed z-40 transform transition-transform duration-300
+        bottom-20 right-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2
+        ${isOpen ? 'translate-x-full' : 'sm:translate-x-[68%] sm:hover:translate-x-0 translate-x-[calc(100%-2.25rem)]'}
+      `}>
         <button
           onClick={handleOpen}
           className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white pl-3 pr-4 py-2.5 rounded-l-xl shadow-lg transition-colors"

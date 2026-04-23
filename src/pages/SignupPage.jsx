@@ -65,7 +65,7 @@ export default function SignupPage() {
 
   return (
     <>
-      <div className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-brand-50 via-slate-50 to-brand-100 dark:from-slate-950 dark:via-slate-900 dark:to-brand-950 py-12 sm:px-6 lg:px-8 transition-colors relative overflow-hidden">
+      <div className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-brand-50 via-slate-50 to-brand-100 dark:from-slate-950 dark:via-slate-900 dark:to-brand-950 py-12 px-4 sm:px-6 lg:px-8 transition-colors relative overflow-hidden">
       {showConfetti && (
         <Confetti
           width={windowDimension.width}
@@ -187,11 +187,16 @@ export default function SignupPage() {
           )}
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-500">
-          Copyright © 2026 — Powered by Corevia Technologies
+        <p className="hidden sm:block mt-6 text-center text-xs text-slate-500 dark:text-slate-500">
+          Copyright &copy; 2026 — Powered by Corevia Technologies
         </p>
       </div>
     </div>
+
+    {/* Mobile-only fixed copyright */}
+    <p className="sm:hidden fixed bottom-3 left-0 right-0 text-center text-xs text-slate-400 dark:text-slate-600 pointer-events-none z-30">
+      Copyright &copy; 2026 — Powered by Corevia Technologies
+    </p>
     <FeedbackWidget />
     </>
   );
