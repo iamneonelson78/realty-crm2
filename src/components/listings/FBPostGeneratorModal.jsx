@@ -2,7 +2,7 @@
  * FBPostGeneratorModal.jsx
  *
  * Two-column layout:
- * - Left: read-only listing summary
+ * - Left: editable listing details (saves to DB via onSave)
  * - Right: editable generated post with template tabs, char count, copy button, save-as-template
  */
 
@@ -12,7 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { DEFAULT_TEMPLATES, formatPost } from '../../lib/listingPostTemplates';
 import { listTemplates, createTemplate } from '../../lib/listingTemplates';
 
-export default function FBPostGeneratorModal({ listing, messengerHandle, onClose }) {
+export default function FBPostGeneratorModal({ listing, messengerHandle, onClose, onSave }) {
   const { user } = useAuth();
   const [customTemplates, setCustomTemplates] = useState([]);
   const [activeId, setActiveId] = useState(DEFAULT_TEMPLATES[0].id);
@@ -23,6 +23,11 @@ export default function FBPostGeneratorModal({ listing, messengerHandle, onClose
   const [showSave, setShowSave] = useState(false);
   const [error, setError]       = useState('');
 
+  // Editable listing state
+  const [localListing, setLocalListing]       = useState({ ...listing });
+  const [savingDetails, setSavingDetails]     = useState(false);
+  const [detailsSaved, setDetailsSaved]       = useState(false);
+
   // Load custom templates
   useEffect(() => {
     if (!user?.id) return;
@@ -31,11 +36,29 @@ export default function FBPostGeneratorModal({ listing, messengerHandle, onClose
 
   const allTemplates = [...DEFAULT_TEMPLATES, ...customTemplates];
 
-  // Regenerate post when active template or listing changes
+  // Regenerate post when active template or localListing changes
   useEffect(() => {
     const tpl = allTemplates.find((t) => t.id === activeId);
-    if (tpl) setPost(formatPost(listing, tpl.body, messengerHandle));
-  }, [activeId, listing, messengerHandle, customTemplates]);
+    if (tpl) setPost(formatPost(localListing, tpl.body, messengerHandle));
+  }, [activeId, localListing, messengerHandle, customTemplates]);
+
+  function updateField(key, value) {
+    setLocalListing((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handleSaveDetails() {
+    if (!onSave) return;
+    setSavingDetails(true);
+    try {
+      await onSave(localListing);
+      setDetailsSaved(true);
+      setTimeout(() => setDetailsSaved(false), 2000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingDetails(false);
+    }
+  }
 
   async function handleCopy() {
     await navigator.clipboard.writeText(post);
@@ -60,38 +83,47 @@ export default function FBPostGeneratorModal({ listing, messengerHandle, onClose
     }
   }
 
-  const photos = Array.isArray(listing.photo_urls) ? listing.photo_urls : [];
+  const photos = Array.isArray(localListing.photo_urls) ? localListing.photo_urls : [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 overflow-y-auto p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-5xl flex flex-col" style={{ maxHeight: '90vh' }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">FB Post Generator</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200 dark:divide-gray-700">
-          {/* Left: listing summary */}
-          <div className="px-6 py-5 space-y-3 text-sm text-gray-700 dark:text-gray-300">
-            <p className="font-semibold text-gray-900 dark:text-white text-base">{listing.title}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200 dark:divide-gray-700 flex-1 min-h-0 overflow-hidden">
+          {/* Left: editable listing details */}
+          <div className="px-6 py-5 space-y-3 text-sm overflow-y-auto">
             {photos[0] && (
-              <img src={photos[0].web_content_link} alt="" className="w-full h-36 object-cover rounded-lg" />
+              <img src={photos[0].web_content_link} alt="" className="w-full h-32 object-cover rounded-lg" />
             )}
-            <Row label="Location" value={listing.location} />
-            <Row label="Rent" value={listing.rent ? `PHP ${Number(listing.rent).toLocaleString()}/mo` : undefined} />
-            <Row label="Category" value={listing.category} />
-            <Row label="Beds" value={listing.beds} />
-            <Row label="Bathrooms" value={listing.bathrooms} />
-            <Row label="Floor Area" value={listing.floor_area ? `${listing.floor_area} sqm` : undefined} />
-            <Row label="Amenities" value={listing.amenities} />
-            <Row label="Rules" value={listing.rules} />
+            <EditField label="Title"      value={localListing.title || ''}      onChange={(v) => updateField('title', v)} />
+            <EditField label="Location"   value={localListing.location || ''}   onChange={(v) => updateField('location', v)} />
+            <EditField label="Rent"       value={localListing.rent ?? ''}       onChange={(v) => updateField('rent', v)} type="number" />
+            <EditField label="Category"   value={localListing.category || ''}   onChange={(v) => updateField('category', v)} />
+            <EditField label="Beds"       value={localListing.beds || ''}       onChange={(v) => updateField('beds', v)} />
+            <EditField label="Bathrooms"  value={localListing.bathrooms || ''}  onChange={(v) => updateField('bathrooms', v)} />
+            <EditField label="Floor Area" value={localListing.floor_area || ''} onChange={(v) => updateField('floor_area', v)} placeholder="sqm" />
+            <EditField label="Amenities"  value={localListing.amenities || ''}  onChange={(v) => updateField('amenities', v)} textarea />
+            <EditField label="Rules"      value={localListing.rules || ''}      onChange={(v) => updateField('rules', v)} textarea />
+            {onSave && (
+              <button
+                onClick={handleSaveDetails}
+                disabled={savingDetails}
+                className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 text-sm rounded-lg bg-brand-600 hover:bg-brand-700 text-white disabled:opacity-60 transition-colors"
+              >
+                {savingDetails ? 'Saving…' : detailsSaved ? <><Check className="w-4 h-4" /> Saved!</> : 'Save Changes'}
+              </button>
+            )}
           </div>
 
           {/* Right: editable post */}
-          <div className="px-6 py-5 flex flex-col gap-4">
+          <div className="px-6 py-5 flex flex-col gap-4 overflow-y-auto">
             {/* Template tabs */}
             <div className="flex gap-2 flex-wrap">
               {allTemplates.map((t) => (
@@ -111,7 +143,7 @@ export default function FBPostGeneratorModal({ listing, messengerHandle, onClose
 
             {/* Editable textarea */}
             <textarea
-              className="flex-1 min-h-[260px] w-full p-3 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="flex-1 min-h-[380px] w-full p-3 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
               value={post}
               onChange={(e) => setPost(e.target.value)}
             />
@@ -168,12 +200,26 @@ export default function FBPostGeneratorModal({ listing, messengerHandle, onClose
   );
 }
 
-function Row({ label, value }) {
-  if (!value && value !== 0) return null;
+function EditField({ label, value, onChange, type = 'text', textarea = false, placeholder }) {
   return (
-    <div className="flex gap-2">
-      <span className="text-gray-400 w-24 shrink-0">{label}</span>
-      <span className="text-gray-800 dark:text-gray-200">{value}</span>
+    <div className="flex gap-2 items-start">
+      <span className="text-gray-400 dark:text-gray-500 w-24 shrink-0 pt-1.5 text-xs">{label}</span>
+      {textarea ? (
+        <textarea
+          className="flex-1 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-brand-500 min-h-[56px]"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+        />
+      ) : (
+        <input
+          type={type}
+          className="flex-1 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+        />
+      )}
     </div>
   );
 }

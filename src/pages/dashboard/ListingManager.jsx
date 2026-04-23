@@ -89,6 +89,14 @@ export default function ListingManager() {
     toast.success(isEdit ? 'Listing updated.' : 'Listing created.');
   }
 
+  async function handlePostSave(updatedListing) {
+    if (!updatedListing?.id) return;
+    const saved = await updateListing(updatedListing.id, updatedListing);
+    setListings((prev) => prev.map((l) => (l.id === saved.id ? saved : l)));
+    setPostListing(saved);
+    toast.success('Listing updated.');
+  }
+
   async function handleDelete(id) {
     const ok = await confirm({
       title: 'Delete listing',
@@ -276,6 +284,7 @@ export default function ListingManager() {
           listing={postListing}
           messengerHandle={messengerHandle}
           onClose={() => setPostListing(null)}
+          onSave={handlePostSave}
         />
       )}
       {showTemplates && (
