@@ -40,14 +40,18 @@ export default function AdminAccess() {
 
   useEffect(() => {
     const viewId = searchParams.get('view');
-    if (!viewId || users.length === 0) return;
-    const target = users.find((u) => u.id === viewId);
+    const editId = searchParams.get('edit');
+    const targetId = editId || viewId;
+    const mode = editId ? 'edit' : 'view';
+    if (!targetId || users.length === 0) return;
+    const target = users.find((u) => u.id === targetId);
     if (target) {
       setSelectedUser(target);
-      setDrawerMode('view');
+      setDrawerMode(mode);
     }
     const next = new URLSearchParams(searchParams);
     next.delete('view');
+    next.delete('edit');
     setSearchParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users]);
@@ -302,60 +306,66 @@ export default function AdminAccess() {
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
         {/* Toolbar */}
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50 dark:bg-slate-950/50">
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search all columns…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-brand-500 focus:border-brand-500 outline-none w-56 transition-colors"
-              />
-            </div>
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 space-y-3 bg-slate-50 dark:bg-slate-950/50">
+          {/* Row 1: Search (full width on mobile) */}
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search all columns…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9 pr-4 py-2 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-brand-500 focus:border-brand-500 outline-none transition-colors"
+            />
+          </div>
+
+          {/* Row 2: Sort + Direction + Role in a compact 3-col grid on mobile */}
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-row sm:gap-2">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-300"
+              className="col-span-1 px-2 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-slate-700 dark:text-slate-300 truncate"
               title="Sort column"
             >
-              <option value="created_at">Sort: Joined Date</option>
-              <option value="name">Sort: Name</option>
-              <option value="email">Sort: Email</option>
-              <option value="role">Sort: Role</option>
-              <option value="status">Sort: Status</option>
+              <option value="created_at">Joined</option>
+              <option value="name">Name</option>
+              <option value="email">Email</option>
+              <option value="role">Role</option>
+              <option value="status">Status</option>
             </select>
             <button
               onClick={() => setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
-              className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900"
+              className="col-span-1 px-2 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 whitespace-nowrap"
               title="Toggle sort direction"
             >
-              {sortDir === 'asc' ? 'Ascending' : 'Descending'}
+              {sortDir === 'asc' ? '↑ Asc' : '↓ Desc'}
             </button>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-300"
+              className="col-span-1 px-2 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs sm:text-sm text-slate-700 dark:text-slate-300"
               title="Filter by role"
             >
-              <option value="all">Role: All</option>
-              <option value="agent">Role: Agent</option>
-              <option value="admin">Role: Admin</option>
+              <option value="all">All roles</option>
+              <option value="agent">Agent</option>
+              <option value="admin">Admin</option>
             </select>
           </div>
-          <div className="flex gap-2">
-            {['all', 'pending', 'active', 'suspended'].map(f => (
+
+          {/* Row 3: Status filter — segmented tab strip, equal-width, no wrapping */}
+          <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-900">
+            {['all', 'pending', 'active', 'suspended'].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${
+                className={`flex-1 py-2 text-xs font-semibold capitalize transition-colors border-r border-slate-200 dark:border-slate-700 last:border-r-0 ${
                   filter === f
                     ? 'bg-slate-900 dark:bg-brand-600 text-white'
-                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
-                {f} <span className="ml-1 opacity-80">({statusCounts[f]})</span>
+                <span className="block">{f}</span>
+                <span className="block text-[10px] font-normal opacity-70">({statusCounts[f]})</span>
               </button>
             ))}
           </div>

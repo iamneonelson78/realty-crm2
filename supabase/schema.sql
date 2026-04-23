@@ -1,5 +1,22 @@
--- Consolidated Schema for Realty CRM
--- Goal: Clean slate deployment. DROPS everything and recreates it.
+-- ============================================================
+--  Realty CRM — Consolidated Schema + Seed
+--  Single file for a clean-slate Supabase deployment.
+--  The migration file (20260423_feedback_listings_upgrade.sql)
+--  is NOT needed when running this — it is already incorporated.
+--
+--  HOW TO RUN:
+--  Step 1 → Paste & run THIS file in Supabase SQL Editor.
+--  Step 2 → Create auth users in Supabase Dashboard:
+--             Authentication → Users → Add user
+--             admin@realty.com  (UUID: ec97a4d8-64e8-49c9-9d74-5ce13a7d75f5)
+--             agent@realty.com  (UUID: 7379f1db-a48f-44d2-b0e3-3c50bb502bb8)
+--  Step 3 → Run ONLY the "SEED DATA" section below (or run the full file
+--            again after users are created — the seed block is safe to re-run).
+-- ============================================================
+
+-- ============================================================
+--  SCHEMA — drops everything and recreates clean
+-- ============================================================
 
 -- 0. Cleanup existing objects
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
@@ -209,3 +226,88 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER connections_set_updated_at
   BEFORE UPDATE ON public.connections
   FOR EACH ROW EXECUTE PROCEDURE public.touch_connections_updated_at();
+
+-- ============================================================
+--  SEED DATA
+--  Requires auth users to exist first (see HOW TO RUN above).
+--  Safe to re-run multiple times.
+-- ============================================================
+
+-- Cleanup existing seed rows
+DELETE FROM public.connections WHERE agent_id = '7379f1db-a48f-44d2-b0e3-3c50bb502bb8';
+DELETE FROM public.leads       WHERE agent_id = '7379f1db-a48f-44d2-b0e3-3c50bb502bb8';
+DELETE FROM public.listings    WHERE agent_id = '7379f1db-a48f-44d2-b0e3-3c50bb502bb8';
+DELETE FROM public.feedback    WHERE user_id IN (
+  'ec97a4d8-64e8-49c9-9d74-5ce13a7d75f5',
+  '7379f1db-a48f-44d2-b0e3-3c50bb502bb8'
+);
+
+-- Guard: fail clearly if auth users have not been created yet
+DO $$
+DECLARE
+  missing_ids TEXT;
+BEGIN
+  SELECT string_agg(required.id::text, ', ')
+  INTO missing_ids
+  FROM (VALUES
+    ('ec97a4d8-64e8-49c9-9d74-5ce13a7d75f5'::uuid),
+    ('7379f1db-a48f-44d2-b0e3-3c50bb502bb8'::uuid)
+  ) AS required(id)
+  LEFT JOIN auth.users au ON au.id = required.id
+  WHERE au.id IS NULL;
+
+  IF missing_ids IS NOT NULL THEN
+    RAISE EXCEPTION
+      E'STOP: Missing auth.users row(s): %.\nCreate these users first via Supabase Dashboard → Authentication → Users.',
+      missing_ids;
+  END IF;
+END $$;
+
+-- Profiles
+INSERT INTO public.profiles (id, status, name, email, role, phone, location, connections_enabled, temp_password_required)
+VALUES
+  ('ec97a4d8-64e8-49c9-9d74-5ce13a7d75f5', 'active', 'Admin Manager',
+   'admin@realty.com', 'admin', '+63 917 000 0000', 'Makati City', false, false),
+  ('7379f1db-a48f-44d2-b0e3-3c50bb502bb8', 'active', 'Pro Agent',
+   'agent@realty.com', 'agent', '+63 917 000 0001', 'Taguig City', true, false)
+ON CONFLICT (id) DO UPDATE
+  SET status = EXCLUDED.status, name = EXCLUDED.name, email = EXCLUDED.email,
+      role = EXCLUDED.role, phone = EXCLUDED.phone, location = EXCLUDED.location,
+      connections_enabled = EXCLUDED.connections_enabled,
+      temp_password_required = EXCLUDED.temp_password_required;
+
+-- Listings
+INSERT INTO public.listings (id, agent_id, title, rent, location, beds, rules)
+VALUES
+  ('10000000-0000-0000-0000-000000000011', '7379f1db-a48f-44d2-b0e3-3c50bb502bb8',
+   'BGC 2BR Fully Furnished', 45000, 'Avida Towers, BGC', '2', 'No Pets, Minimum 1 Year'),
+  ('10000000-0000-0000-0000-000000000012', '7379f1db-a48f-44d2-b0e3-3c50bb502bb8',
+   'Makati Studio Skyline View', 25000, 'Jazz Residences', '0', '1 Mo Adv, 1 Mo Dep');
+
+-- Leads (one per pipeline stage)
+INSERT INTO public.leads (id, agent_id, name, messenger, mobile, unit, status)
+VALUES
+  ('20000000-0000-0000-0000-000000000021', '7379f1db-a48f-44d2-b0e3-3c50bb502bb8',
+   'Juan Dela Cruz',    'm.me/juan',   '09170000001', 'Avida Towers 1BR',  'inquiry'),
+  ('20000000-0000-0000-0000-000000000022', '7379f1db-a48f-44d2-b0e3-3c50bb502bb8',
+   'Maria Santos',      'm.me/maria',  '09170000002', 'SMDC Light',        'contacted'),
+  ('20000000-0000-0000-0000-000000000023', '7379f1db-a48f-44d2-b0e3-3c50bb502bb8',
+   'Elena Reyes',       'm.me/elena',  '09170000003', 'BGC 2BR Bare',      'viewing'),
+  ('20000000-0000-0000-0000-000000000024', '7379f1db-a48f-44d2-b0e3-3c50bb502bb8',
+   'Andres Bonifacio',  'm.me/andres', '09170000004', 'Megaworld Studio',  'reserved'),
+  ('20000000-0000-0000-0000-000000000025', '7379f1db-a48f-44d2-b0e3-3c50bb502bb8',
+   'Jose Rizal',        'm.me/jose',   '09170000005', 'Jazz Res 1BR',      'closed');
+
+-- Connection (Messenger)
+INSERT INTO public.connections (agent_id, platform, handle, status, connected_at)
+VALUES ('7379f1db-a48f-44d2-b0e3-3c50bb502bb8', 'messenger', 'm.me/pro.agent', 'connected', now())
+ON CONFLICT (agent_id, platform) DO UPDATE
+  SET handle = EXCLUDED.handle, status = EXCLUDED.status, connected_at = EXCLUDED.connected_at;
+
+-- Sample feedback
+INSERT INTO public.feedback (user_id, category, rating, message)
+VALUES
+  ('7379f1db-a48f-44d2-b0e3-3c50bb502bb8', 'Suggestion', 5,
+   'Love the pipeline board and listing tools.'),
+  ('ec97a4d8-64e8-49c9-9d74-5ce13a7d75f5', 'Question', 4,
+   'Please add role change audit logs in admin access.');

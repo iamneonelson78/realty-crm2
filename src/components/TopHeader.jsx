@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Bell, Moon, Sun, LogOut, X, Camera, Save, Lock, User as UserIcon, Mail, Shield, Phone, MapPin, ImageOff, HelpCircle, Send } from 'lucide-react';
+import { Bell, Moon, Sun, LogOut, X, Camera, Save, Lock, User as UserIcon, Mail, Shield, Phone, MapPin, ImageOff, HelpCircle, Send, MoreVertical } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
@@ -70,6 +70,7 @@ export default function TopHeader() {
   const toast = useToast();
   const [profileOpen, setProfileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [helpTab, setHelpTab] = useState('faq');
   const [helpSending, setHelpSending] = useState(false);
   const [helpForm, setHelpForm] = useState({ title: '', message: '' });
@@ -262,32 +263,75 @@ export default function TopHeader() {
             <Logo className="w-8 h-8" />
             <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Realty <span className="text-brand-600 dark:text-brand-400">CRM</span></span>
           </Link>
-          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2 ml-1">
+          <div className="flex flex-row items-center gap-2 ml-1">
             <RoleBadge role={user?.role} />
-            <EnvironmentBadge />
+            <span className="hidden sm:inline-flex"><EnvironmentBadge /></span>
           </div>
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
+          {/* Desktop-only: Help, Theme, Bell */}
           <button
             onClick={() => {
               setProfileOpen(false);
               setHelpOpen(true);
             }}
-            className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+            className="hidden sm:flex p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors"
             title="Help"
           >
             <HelpCircle className="w-5 h-5" />
           </button>
 
-          <button onClick={toggleTheme} className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors" title="Toggle Theme">
+          <button onClick={toggleTheme} className="hidden sm:flex p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors" title="Toggle Theme">
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
 
-          <button className="relative p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors">
+          <button className="hidden sm:flex relative p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors">
             <Bell className="w-5 h-5" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-slate-900"></span>
           </button>
+
+          {/* Mobile-only: overflow ⋮ menu */}
+          <div className="relative sm:hidden">
+            <button
+              onClick={() => setMoreOpen((o) => !o)}
+              className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+              title="More"
+            >
+              <MoreVertical className="w-5 h-5" />
+            </button>
+            {moreOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
+                <div className="absolute right-0 top-full mt-1 z-50 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg py-1 animate-in fade-in zoom-in-95 duration-150">
+                  <button
+                    onClick={() => { setMoreOpen(false); setProfileOpen(false); setHelpOpen(true); }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <HelpCircle className="w-4 h-4 text-slate-400" />
+                    Help
+                  </button>
+                  <button
+                    onClick={() => { toggleTheme(); setMoreOpen(false); }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    {theme === 'dark' ? <Sun className="w-4 h-4 text-slate-400" /> : <Moon className="w-4 h-4 text-slate-400" />}
+                    {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                  </button>
+                  <button
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                    onClick={() => setMoreOpen(false)}
+                  >
+                    <span className="relative">
+                      <Bell className="w-4 h-4 text-slate-400" />
+                      <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-rose-500 rounded-full" />
+                    </span>
+                    Notifications
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
 
           <button
             onClick={() => {

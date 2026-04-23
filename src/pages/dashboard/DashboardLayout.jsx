@@ -132,7 +132,7 @@ export default function DashboardLayout() {
              </button>
           </div>
 
-          <div className={`w-full ${isPipelinePage ? 'max-w-none' : 'max-w-6xl mx-auto'} px-4 sm:px-8 py-6 sm:py-8`}>
+          <div className={`w-full ${isPipelinePage ? 'max-w-none' : 'max-w-6xl mx-auto'} px-4 sm:px-8 py-6 sm:py-8 pb-14 sm:pb-10`}>
             <Outlet />
           </div>
         </main>

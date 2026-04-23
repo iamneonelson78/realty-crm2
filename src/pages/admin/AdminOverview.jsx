@@ -114,12 +114,19 @@ export default function AdminOverview() {
         ) : activity.length === 0 ? (
           <p className="text-sm text-slate-400">No recent activity.</p>
         ) : (
-          <div className="space-y-0 divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
             {activity.map((a, i) => (
-              <div key={i} className="flex justify-between items-center py-3">
+              <div
+                key={i}
+                className={`flex justify-between items-center px-4 py-3 ${
+                  i % 2 === 0
+                    ? 'bg-white dark:bg-slate-900'
+                    : 'bg-slate-50 dark:bg-slate-800/60'
+                }`}
+              >
                 <div>
                   <Link
-                    to={`/admin/access?view=${a.id}`}
+                    to={`/admin/access?edit=${a.id}`}
                     className="text-sm font-medium text-slate-800 dark:text-slate-200 hover:text-brand-600 dark:hover:text-brand-400 hover:underline"
                   >
                     {a.name || 'Unnamed Agent'}

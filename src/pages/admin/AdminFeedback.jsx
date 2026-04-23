@@ -172,7 +172,7 @@ export default function AdminFeedback() {
       {/* Table */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-x-auto">
         <table className="w-full text-left text-sm min-w-[700px]">
-          <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+          <thead className="bg-slate-800 text-slate-100 border-b border-slate-700 dark:bg-black dark:text-slate-200 dark:border-slate-800">
             <tr>
               <th className="px-4 py-3 font-semibold">Date</th>
               <th className="px-4 py-3 font-semibold">Category / Rating</th>
@@ -188,10 +188,12 @@ export default function AdminFeedback() {
               <tr><td colSpan="7" className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
             ) : items.length === 0 ? (
               <tr><td colSpan="7" className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">No feedback found.</td></tr>
-            ) : items.map((item) => (
+            ) : items.map((item, idx) => (
               <tr
                 key={item.id}
-                className="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
+                className={`cursor-pointer transition-colors ${
+                  idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/70 dark:bg-slate-800/40'
+                } hover:bg-slate-100 dark:hover:bg-slate-800/70`}
                 onClick={() => openDrawer(item)}
               >
                 <td className="px-4 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap text-xs">
