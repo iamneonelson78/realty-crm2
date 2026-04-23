@@ -87,7 +87,6 @@ export default function AdminFeedback() {
         await replyFeedback(selected.id, replyText);
         toast.success('Reply saved and email sent.');
       } else {
-        const { updateFeedbackStatus: _, ...lib } = await import('../../lib/feedback.js');
         // Direct DB update without email
         const { supabase } = await import('../../lib/supabaseClient.js');
         const { data, error } = await supabase

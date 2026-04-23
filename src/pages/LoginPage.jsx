@@ -79,9 +79,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-brand-50 via-slate-50 to-brand-100 dark:from-slate-950 dark:via-slate-900 dark:to-brand-950 py-12 sm:px-6 lg:px-8 transition-colors relative overflow-hidden">
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-300/30 dark:bg-brand-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-brand-400/20 dark:bg-brand-600/10 rounded-full blur-[120px] pointer-events-none" />
+    <>
+      <div className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-brand-50 via-slate-50 to-brand-100 dark:from-slate-950 dark:via-slate-900 dark:to-brand-950 py-12 sm:px-6 lg:px-8 transition-colors relative overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-300/30 dark:bg-brand-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-brand-400/20 dark:bg-brand-600/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm py-8 px-6 sm:px-10 shadow-xl shadow-slate-200/50 dark:shadow-black/30 rounded-2xl border border-slate-100 dark:border-slate-800 transition-colors">
@@ -189,7 +190,7 @@ export default function LoginPage() {
                   Object.keys(window.localStorage)
                     .filter((k) => k.startsWith('sb-') || k.includes('supabase.auth'))
                     .forEach((k) => window.localStorage.removeItem(k));
-                } catch {}
+                } catch { /* ignore localStorage errors */ }
                 window.location.reload();
               }}
               className="text-xs text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400 underline transition-colors"
@@ -287,5 +288,6 @@ export default function LoginPage() {
       )}
     </div>
     <FeedbackWidget />
+    </>
   );
 }

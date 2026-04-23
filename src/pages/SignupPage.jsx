@@ -64,7 +64,8 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-brand-50 via-slate-50 to-brand-100 dark:from-slate-950 dark:via-slate-900 dark:to-brand-950 py-12 sm:px-6 lg:px-8 transition-colors relative overflow-hidden">
+    <>
+      <div className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-brand-50 via-slate-50 to-brand-100 dark:from-slate-950 dark:via-slate-900 dark:to-brand-950 py-12 sm:px-6 lg:px-8 transition-colors relative overflow-hidden">
       {showConfetti && (
         <Confetti
           width={windowDimension.width}
@@ -192,5 +193,6 @@ export default function SignupPage() {
       </div>
     </div>
     <FeedbackWidget />
+    </>
   );
 }
