@@ -11,6 +11,7 @@ import { X, Copy, Check, Bookmark } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { DEFAULT_TEMPLATES, formatPost } from '../../lib/listingPostTemplates';
 import { listTemplates, createTemplate } from '../../lib/listingTemplates';
+import PhotoUploader from './PhotoUploader';
 
 export default function FBPostGeneratorModal({ listing, messengerHandle, onClose, onSave }) {
   const { user } = useAuth();
@@ -25,6 +26,7 @@ export default function FBPostGeneratorModal({ listing, messengerHandle, onClose
 
   // Editable listing state
   const [localListing, setLocalListing]       = useState({ ...listing });
+  const [photos, setPhotos]                   = useState(Array.isArray(listing.photo_urls) ? listing.photo_urls : []);
   const [savingDetails, setSavingDetails]     = useState(false);
   const [detailsSaved, setDetailsSaved]       = useState(false);
 
@@ -50,7 +52,7 @@ export default function FBPostGeneratorModal({ listing, messengerHandle, onClose
     if (!onSave) return;
     setSavingDetails(true);
     try {
-      await onSave(localListing);
+      await onSave({ ...localListing, photo_urls: photos });
       setDetailsSaved(true);
       setTimeout(() => setDetailsSaved(false), 2000);
     } catch (err) {
@@ -83,8 +85,6 @@ export default function FBPostGeneratorModal({ listing, messengerHandle, onClose
     }
   }
 
-  const photos = Array.isArray(localListing.photo_urls) ? localListing.photo_urls : [];
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-5xl flex flex-col" style={{ maxHeight: '90vh' }}>
@@ -99,9 +99,15 @@ export default function FBPostGeneratorModal({ listing, messengerHandle, onClose
         <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200 dark:divide-gray-700 flex-1 min-h-0 overflow-hidden">
           {/* Left: editable listing details */}
           <div className="px-6 py-5 space-y-3 text-sm overflow-y-auto">
-            {photos[0] && (
-              <img src={photos[0].web_content_link} alt="" className="w-full h-32 object-cover rounded-lg" />
-            )}
+            {/* Photo gallery */}
+            <PhotoUploader
+              listingId={localListing.id ?? null}
+              photos={photos}
+              onChange={(updated) => {
+                setPhotos(updated);
+                setLocalListing((prev) => ({ ...prev, photo_urls: updated }));
+              }}
+            />
             <EditField label="Title"      value={localListing.title || ''}      onChange={(v) => updateField('title', v)} />
             <EditField label="Location"   value={localListing.location || ''}   onChange={(v) => updateField('location', v)} />
             <EditField label="Rent"       value={localListing.rent ?? ''}       onChange={(v) => updateField('rent', v)} type="number" />

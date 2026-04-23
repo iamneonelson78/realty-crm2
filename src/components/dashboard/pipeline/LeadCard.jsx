@@ -38,20 +38,21 @@ export default function LeadCard({ lead, onMove, draggable = true }) {
         className={`p-4 ${draggable ? 'md:cursor-grab md:active:cursor-grabbing' : ''} touch-none select-none`}
       >
         <div className="flex justify-between items-start gap-2 mb-2">
-          <h4 className={`font-semibold text-slate-900 dark:text-slate-100 text-sm leading-tight truncate ${isCancelled ? 'line-through opacity-50' : ''}`}>
-            {lead.name}
-          </h4>
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 min-w-0">
+            <h4 className={`font-semibold text-slate-900 dark:text-slate-100 text-sm leading-tight ${isCancelled ? 'line-through opacity-50' : ''}`}>
+              {lead.name}
+            </h4>
+            {lead.status === 'closed' && lead.close_reason && (
+              <span className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${REASON_STYLE[lead.close_reason] ?? REASON_STYLE['Duplicate']}`}>
+                {lead.close_reason}
+              </span>
+            )}
+          </div>
         </div>
 
         <span className={`inline-flex max-w-full items-center text-[11px] font-medium text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/30 border border-brand-100 dark:border-brand-800/50 px-2 py-0.5 rounded-md truncate ${isCancelled ? 'line-through opacity-50' : ''}`}>
           {lead.unit}
         </span>
-
-        {lead.status === 'closed' && lead.close_reason && (
-          <div className={`mt-2 inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${REASON_STYLE[lead.close_reason] ?? REASON_STYLE['Duplicate']}`}>
-            {lead.close_reason}
-          </div>
-        )}
 
         <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/60">
           <a

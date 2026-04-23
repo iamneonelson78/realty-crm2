@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { LISTING_CATEGORIES, LISTING_STATUSES } from '../../lib/listingPostTemplates';
+import PhotoUploader from './PhotoUploader';
 
 const EMPTY = {
   title: '',
@@ -34,12 +35,14 @@ const STATUS_LABELS = {
 export default function ListingFormModal({ listing, onSave, onClose }) {
   const isEdit = Boolean(listing);
   const [form, setForm] = useState(isEdit ? { ...EMPTY, ...listing } : EMPTY);
+  const [photos, setPhotos] = useState(Array.isArray(listing?.photo_urls) ? listing.photo_urls : []);
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
 
   // Keep form in sync if the listing prop changes (e.g. opening different rows)
   useEffect(() => {
     setForm(isEdit ? { ...EMPTY, ...listing } : EMPTY);
+    setPhotos(Array.isArray(listing?.photo_urls) ? listing.photo_urls : []);
     setError('');
   }, [listing?.id]);
 
@@ -51,7 +54,7 @@ export default function ListingFormModal({ listing, onSave, onClose }) {
     setSaving(true);
     setError('');
     try {
-      await onSave({ ...form });
+      await onSave({ ...form, photo_urls: photos });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -150,6 +153,15 @@ export default function ListingFormModal({ listing, onSave, onClose }) {
           {/* Contact */}
           <Field label="Contact">
             <input className={input} value={form.contact} onChange={(e) => set('contact', e.target.value)} placeholder="Your name, phone, or Messenger link" />
+          </Field>
+
+          {/* Photos */}
+          <Field label={`Photos (${photos.length}/5)`}>
+            <PhotoUploader
+              listingId={listing?.id ?? null}
+              photos={photos}
+              onChange={setPhotos}
+            />
           </Field>
 
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
