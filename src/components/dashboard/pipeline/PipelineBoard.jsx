@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { DndContext, PointerSensor, TouchSensor, useSensor, useSensors, DragOverlay, closestCorners } from '@dnd-kit/core';
 import { Plus } from 'lucide-react';
 import { STAGES, getStage } from './stages';
@@ -48,6 +48,19 @@ export default function PipelineBoard({ leads, onMove, onAddLead }) {
   const visibleStage = getStage(mobileStage) ?? STAGES[0];
   const mobileLeads = leadsByStage[visibleStage.id];
 
+  // Swipe support
+  const touchStartX = useRef(null);
+  function handleTouchStart(e) { touchStartX.current = e.touches[0].clientX; }
+  function handleTouchEnd(e) {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(delta) < 50) return;
+    const idx = STAGES.findIndex((s) => s.id === mobileStage);
+    if (delta < 0 && idx < STAGES.length - 1) setMobileStage(STAGES[idx + 1].id); // swipe left → next
+    if (delta > 0 && idx > 0) setMobileStage(STAGES[idx - 1].id); // swipe right → prev
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -60,7 +73,11 @@ export default function PipelineBoard({ leads, onMove, onAddLead }) {
       <div className="md:hidden">
         <StageTabs active={visibleStage.id} counts={counts} onChange={setMobileStage} />
 
-        <div className="mt-4 space-y-3">
+        <div
+          className="mt-4 space-y-3"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           {mobileLeads.map((lead) => (
             <LeadCard key={lead.id} lead={lead} onMove={onMove} draggable={false} />
           ))}

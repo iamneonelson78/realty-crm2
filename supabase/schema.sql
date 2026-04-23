@@ -59,6 +59,7 @@ CREATE TABLE public.leads (
     mobile TEXT,
     unit TEXT,
     status TEXT CHECK (status IN ('inquiry', 'contacted', 'viewing', 'reserved', 'closed')) DEFAULT 'inquiry',
+    close_reason TEXT CHECK (close_reason IN ('Closed Won', 'Closed Lost', 'Cancelled', 'Duplicate')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

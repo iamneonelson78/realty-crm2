@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 
 export const LEAD_STATUSES = ['inquiry', 'contacted', 'viewing', 'reserved', 'closed'];
+export const CLOSE_REASONS = ['Closed Won', 'Closed Lost', 'Cancelled', 'Duplicate'];
 
 export async function listLeads(agentId) {
   if (!agentId) return [];
@@ -32,11 +33,13 @@ export async function createLead(agentId, fields) {
   return data;
 }
 
-export async function updateLeadStatus(id, status) {
+export async function updateLeadStatus(id, status, closeReason = null) {
   if (!LEAD_STATUSES.includes(status)) throw new Error(`Invalid lead status: ${status}`);
+  const payload = { status };
+  if (status === 'closed' && closeReason) payload.close_reason = closeReason;
   const { data, error } = await supabase
     .from('leads')
-    .update({ status })
+    .update(payload)
     .eq('id', id)
     .select()
     .single();

@@ -73,18 +73,18 @@ VALUES
    '1 Mo Adv, 1 Mo Dep');
 
 -- 4. Seed leads across every pipeline stage
-INSERT INTO public.leads (id, agent_id, name, messenger, mobile, unit, status)
+INSERT INTO public.leads (id, agent_id, name, messenger, mobile, unit, status, close_reason)
 VALUES
   ('20000000-0000-0000-0000-000000000021', '7379f1db-a48f-44d2-b0e3-3c50bb502bb8',
-   'Juan Dela Cruz', 'm.me/juan', '09170000001', 'Avida Towers 1BR', 'inquiry'),
+   'Juan Dela Cruz', 'm.me/juan', '09170000001', 'Avida Towers 1BR', 'inquiry', NULL),
   ('20000000-0000-0000-0000-000000000022', '7379f1db-a48f-44d2-b0e3-3c50bb502bb8',
-   'Maria Santos', 'm.me/maria', '09170000002', 'SMDC Light', 'contacted'),
+   'Maria Santos', 'm.me/maria', '09170000002', 'SMDC Light', 'contacted', NULL),
   ('20000000-0000-0000-0000-000000000023', '7379f1db-a48f-44d2-b0e3-3c50bb502bb8',
-   'Elena Reyes', 'm.me/elena', '09170000003', 'BGC 2BR Bare', 'viewing'),
+   'Elena Reyes', 'm.me/elena', '09170000003', 'BGC 2BR Bare', 'viewing', NULL),
   ('20000000-0000-0000-0000-000000000024', '7379f1db-a48f-44d2-b0e3-3c50bb502bb8',
-   'Andres Bonifacio', 'm.me/andres', '09170000004', 'Megaworld Studio', 'reserved'),
+   'Andres Bonifacio', 'm.me/andres', '09170000004', 'Megaworld Studio', 'reserved', NULL),
   ('20000000-0000-0000-0000-000000000025', '7379f1db-a48f-44d2-b0e3-3c50bb502bb8',
-   'Jose Rizal', 'm.me/jose', '09170000005', 'Jazz Res 1BR', 'closed');
+   'Jose Rizal', 'm.me/jose', '09170000005', 'Jazz Res 1BR', 'closed', 'Closed Won');
 
 -- 5. Seed one sample connection for the agent (Messenger)
 INSERT INTO public.connections (

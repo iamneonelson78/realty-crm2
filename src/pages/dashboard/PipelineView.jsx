@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import LeadModal from '../../components/dashboard/LeadModal';
 import PipelineBoard from '../../components/dashboard/pipeline/PipelineBoard';
+import CloseReasonModal from '../../components/dashboard/pipeline/CloseReasonModal';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { listLeads, createLead, updateLeadStatus, relativeTime } from '../../lib/leads';
@@ -15,6 +16,7 @@ export default function PipelineView() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [pendingClose, setPendingClose] = useState(null); // { leadId }
 
   useEffect(() => {
     let cancelled = false;
@@ -41,6 +43,11 @@ export default function PipelineView() {
   };
 
   const handleMoveLead = async (leadId, toStage) => {
+    // Intercept moves to 'closed' — require a reason first
+    if (toStage === 'closed') {
+      setPendingClose({ leadId });
+      return;
+    }
     const prior = leads;
     setLeads((curr) => curr.map((l) => (l.id === leadId ? { ...l, status: toStage } : l)));
     try {
@@ -48,6 +55,20 @@ export default function PipelineView() {
       toast.info(`Lead moved to ${toStage}.`, { ttl: 1800 });
     } catch (err) {
       toast.error(`Failed to move lead: ${err.message}`);
+      setLeads(prior);
+    }
+  };
+
+  const handleCloseConfirm = async (reason) => {
+    const { leadId } = pendingClose;
+    setPendingClose(null);
+    const prior = leads;
+    setLeads((curr) => curr.map((l) => (l.id === leadId ? { ...l, status: 'closed', close_reason: reason } : l)));
+    try {
+      await updateLeadStatus(leadId, 'closed', reason);
+      toast.info(`Lead closed: ${reason}.`, { ttl: 2200 });
+    } catch (err) {
+      toast.error(`Failed to close lead: ${err.message}`);
       setLeads(prior);
     }
   };
@@ -86,6 +107,14 @@ export default function PipelineView() {
         onClose={() => setIsLeadModalOpen(false)}
         onSave={handleSaveLead}
       />
+
+      {pendingClose && (
+        <CloseReasonModal
+          lead={leads.find((l) => l.id === pendingClose.leadId) ?? { name: '' }}
+          onConfirm={handleCloseConfirm}
+          onCancel={() => setPendingClose(null)}
+        />
+      )}
     </>
   );
 }
