@@ -60,8 +60,12 @@ export function AuthProvider({ children }) {
           finish();
         }
       })
-      .catch((err) => {
+      .catch(async (err) => {
         console.warn('Auth init failed, clearing stale session:', err?.message || err);
+        // Sign out locally (no network call) to reset SDK in-memory state,
+        // then clear storage. Without the signOut, a subsequent signInWithPassword
+        // can still hang because the SDK's internal session object is dirty.
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
         clearSupabaseStorage();
         finish();
       });
@@ -91,39 +95,69 @@ export function AuthProvider({ children }) {
   }, [fetchProfile]);
 
   const login = async (email, password) => {
-    const { data, error } = await withTimeout(
-      supabase.auth.signInWithPassword({ email, password }),
-      15000,
-      'Login'
-    );
-    if (error) throw error;
-    const { data: profile, error: profileError } = await withTimeout(
-      supabase
-        .from('profiles')
-        .select('role, status, temp_password_required')
-        .eq('id', data.user.id)
-        .single(),
-      10000,
-      'Profile lookup'
-    );
-    if (profileError) throw profileError;
-    if (profile.status === 'pending') {
-      await withTimeout(supabase.auth.signOut(), 5000, 'Sign out').catch(() => {});
-      throw new Error('Your signup is pending admin review. You will receive an email within 1-2 hours once approved.');
-    }
-    if (profile.status === 'suspended') {
-      await withTimeout(supabase.auth.signOut(), 5000, 'Sign out').catch(() => {});
-      throw new Error('Your account has been suspended. Please contact an administrator.');
-    }
-    return {
-      ...data,
-      user: {
-        ...data.user,
-        role: profile.role,
-        status: profile.status,
-        temp_password_required: !!profile.temp_password_required,
-      },
+    const attempt = async () => {
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        15000,
+        'Login'
+      );
+      if (error) throw error;
+      const { data: profile, error: profileError } = await withTimeout(
+        supabase
+          .from('profiles')
+          .select('role, status, temp_password_required')
+          .eq('id', data.user.id)
+          .single(),
+        10000,
+        'Profile lookup'
+      );
+      if (profileError) throw profileError;
+      if (profile.status === 'pending') {
+        await withTimeout(supabase.auth.signOut(), 5000, 'Sign out').catch(() => {});
+        throw new Error('Your signup is pending admin review. You will receive an email within 1-2 hours once approved.');
+      }
+      if (profile.status === 'suspended') {
+        await withTimeout(supabase.auth.signOut(), 5000, 'Sign out').catch(() => {});
+        throw new Error('Your account has been suspended. Please contact an administrator.');
+      }
+      return {
+        ...data,
+        user: {
+          ...data.user,
+          role: profile.role,
+          status: profile.status,
+          temp_password_required: !!profile.temp_password_required,
+        },
+      };
     };
+
+    const isNetworkOrTimeout = (err) =>
+      err?.name === 'AbortError' ||
+      err?.message?.includes('timed out') ||
+      err?.message?.includes('Failed to fetch') ||
+      err?.message?.includes('NetworkError');
+
+    try {
+      return await attempt();
+    } catch (err) {
+      if (!isNetworkOrTimeout(err)) throw err;
+      // Stale token or lock contention caused the hang. Reset SDK state (local
+      // only — no network call) and retry once. This is equivalent to what
+      // opening incognito achieves, but transparent to the user.
+      console.warn('[login] Network/timeout error; resetting stale session and retrying once.', err?.message);
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      clearSupabaseStorage();
+      try {
+        return await attempt();
+      } catch (retryErr) {
+        if (isNetworkOrTimeout(retryErr)) {
+          throw new Error(
+            'Your browser had a stale session that has been reset. Please try logging in again.'
+          );
+        }
+        throw retryErr;
+      }
+    }
   };
 
   const signup = async (email, password, fullName) => {

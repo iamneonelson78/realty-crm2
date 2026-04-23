@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
-const REQUEST_TIMEOUT_MS = 15000;
+const REQUEST_TIMEOUT_MS = 12000; // 3s head-start over the 15s withTimeout in AuthContext
 const LOCK_ACQUIRE_TIMEOUT_MS = 3000;
 
 // Hard ceiling on every Supabase request (auth, Postgrest, RPC, storage).

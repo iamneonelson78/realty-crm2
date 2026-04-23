@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Lock, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
+import { Lock, ArrowRight, AlertCircle, CheckCircle, X } from 'lucide-react';
 import Logo from '../components/Logo';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from '../context/ToastContext';
@@ -127,7 +127,15 @@ export default function ResetPasswordPage() {
               {error && (
                 <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm font-medium text-red-800 dark:text-red-300">{error}</p>
+                  <p className="flex-1 text-sm font-medium text-red-800 dark:text-red-300">{error}</p>
+                  <button
+                    type="button"
+                    onClick={() => setError('')}
+                    className="text-red-400 hover:text-red-600 dark:hover:text-red-200 flex-shrink-0"
+                    aria-label="Dismiss"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               )}
 

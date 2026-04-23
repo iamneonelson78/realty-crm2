@@ -118,7 +118,15 @@ export default function LoginPage() {
           {error && (
             <div className="mb-5 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-              <p className="text-sm font-medium text-red-800 dark:text-red-300">{error}</p>
+              <p className="flex-1 text-sm font-medium text-red-800 dark:text-red-300">{error}</p>
+              <button
+                type="button"
+                onClick={() => setError('')}
+                className="text-red-400 hover:text-red-600 dark:hover:text-red-200 flex-shrink-0"
+                aria-label="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           )}
 
@@ -193,7 +201,11 @@ export default function LoginPage() {
                 } catch { /* ignore localStorage errors */ }
                 window.location.reload();
               }}
-              className="text-xs text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400 underline transition-colors"
+              className={`text-xs underline transition-colors ${
+                error && (error.includes('stale') || error.includes('timed out'))
+                  ? 'text-brand-600 dark:text-brand-400 hover:text-brand-500 font-semibold'
+                  : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
+              }`}
             >
               Having trouble logging in? Reset session
             </button>
