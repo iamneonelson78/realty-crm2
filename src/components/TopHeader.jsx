@@ -9,6 +9,15 @@ import { useEffect, useRef, useState } from 'react';
 
 const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'support@getcoreviatechnologies.com';
 
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Request timed out after ${ms / 1000}s`)), ms)
+    ),
+  ]);
+}
+
 function RoleBadge({ role }) {
   if (!role) return null;
   const isAdmin = role === 'admin';
@@ -161,9 +170,7 @@ export default function TopHeader() {
         .eq('id', user.id);
       if (profileError) throw profileError;
 
-      const { error: metaError } = await supabase.auth.updateUser({ data: updates });
-      if (metaError) throw metaError;
-
+      // Update local state and show success immediately — profiles table is source of truth.
       setUser((prev) => ({
         ...prev,
         name: form.name,
@@ -174,9 +181,13 @@ export default function TopHeader() {
       }));
 
       toast.success('Profile saved.');
+      setSavingProfile(false);
+
+      // Sync auth metadata in background — non-critical, don't block the UI.
+      withTimeout(supabase.auth.updateUser({ data: updates }), 8000)
+        .catch((err) => console.warn('Auth metadata sync failed (non-critical):', err?.message));
     } catch (err) {
       toast.error(`Failed to save profile: ${err.message}`);
-    } finally {
       setSavingProfile(false);
     }
   };
@@ -194,7 +205,7 @@ export default function TopHeader() {
 
     setSavingPassword(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: passwordForm.newPassword });
+      const { error } = await withTimeout(supabase.auth.updateUser({ password: passwordForm.newPassword }), 12000);
       if (error) throw error;
 
       const { error: profileError } = await supabase
@@ -207,7 +218,10 @@ export default function TopHeader() {
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       toast.success('Password updated.');
     } catch (err) {
-      toast.error(`Failed to update password: ${err.message}`);
+      const msg = err.message?.includes('timed out')
+        ? 'Request timed out. Please try again.'
+        : `Failed to update password: ${err.message}`;
+      toast.error(msg);
     } finally {
       setSavingPassword(false);
     }

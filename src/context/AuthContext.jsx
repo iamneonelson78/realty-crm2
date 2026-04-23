@@ -3,6 +3,16 @@ import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext();
 
+function clearSupabaseStorage() {
+  try {
+    Object.keys(window.localStorage)
+      .filter((k) => k.startsWith('sb-') || k.includes('supabase.auth'))
+      .forEach((k) => window.localStorage.removeItem(k));
+  } catch {
+    // non-critical
+  }
+}
+
 function withTimeout(promise, ms, label) {
   return Promise.race([
     promise,
@@ -40,7 +50,11 @@ export function AuthProvider({ children }) {
         setSession(session);
         if (session?.user) {
           withTimeout(fetchProfile(session.user), 8000, 'Profile load')
-            .catch((err) => console.error('Profile load failed:', err))
+            .catch(async (err) => {
+              console.warn('Profile load failed, clearing stale session:', err?.message);
+              await supabase.auth.signOut().catch(() => {});
+              clearSupabaseStorage();
+            })
             .finally(finish);
         } else {
           finish();
@@ -48,13 +62,7 @@ export function AuthProvider({ children }) {
       })
       .catch((err) => {
         console.warn('Auth init failed, clearing stale session:', err?.message || err);
-        try {
-          Object.keys(window.localStorage)
-            .filter((k) => k.startsWith('sb-') || k.includes('supabase.auth'))
-            .forEach((k) => window.localStorage.removeItem(k));
-        } catch (e) {
-          console.warn('Could not clear stale session:', e);
-        }
+        clearSupabaseStorage();
         finish();
       });
 
@@ -133,8 +141,13 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    await supabase.auth.signOut().catch(() => {});
+    // Force-clear all Supabase auth storage regardless of signOut result.
+    // This ensures stale tokens don't survive an F5 and cause login hangs.
+    clearSupabaseStorage();
+    // Hard reload: creates a fresh JS context and Supabase client instance,
+    // equivalent to what opening incognito achieves.
+    window.location.assign('/login');
   };
 
   return (
@@ -143,7 +156,7 @@ export function AuthProvider({ children }) {
         <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950">
           <div className="flex flex-col items-center gap-3">
             <div className="w-10 h-10 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
-            <p className="text-sm text-slate-500 dark:text-slate-400">Loading Realty CRM…</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Loading Realty CRM...</p>
           </div>
         </div>
       ) : children}

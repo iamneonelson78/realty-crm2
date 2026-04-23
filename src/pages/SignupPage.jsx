@@ -35,16 +35,17 @@ export default function SignupPage() {
       setSignupSuccess(true);
       setTimeout(() => setShowConfetti(false), 5000);
 
-      // Fire-and-forget admin notification. Never block the UI or bubble
-      // errors back to the user — if it fails the admin can still see the
-      // pending user in the Access Control screen.
+      // Fire-and-forget admin notification. Delayed 2.5 s so the DB trigger
+      // has time to create the profiles row before the API looks it up.
       const newUserId = result?.user?.id;
       if (newUserId) {
-        fetch('/api/notify-admin-signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: newUserId }),
-        }).catch((err) => console.warn('notify-admin-signup failed:', err));
+        setTimeout(() => {
+          fetch('/api/notify-admin-signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: newUserId }),
+          }).catch((err) => console.warn('notify-admin-signup failed:', err));
+        }, 2500);
       }
     } catch (err) {
       console.error(err);

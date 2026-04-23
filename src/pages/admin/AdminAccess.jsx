@@ -471,6 +471,18 @@ export default function AdminAccess() {
                 </div>
 
                 <div className="px-4 pb-6">
+                  {drawerMode === 'view' && selectedUser.status === 'pending' && (
+                    <div className="mb-4 rounded-xl border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-2">
+                      <p className="text-xs font-medium text-amber-800 dark:text-amber-300">This user is pending approval.</p>
+                      <button
+                        onClick={() => updateStatus(selectedUser.id, 'active')}
+                        className="w-full px-3 py-2 rounded-lg text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                      >
+                        Activate User
+                      </button>
+                    </div>
+                  )}
+
                   {drawerMode === 'edit' && (
                     <div className="mb-4 rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-3">
                       <div>
@@ -491,7 +503,7 @@ export default function AdminAccess() {
                             onClick={() => updateStatus(selectedUser.id, 'active')}
                             className="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400"
                           >
-                            Active
+                            Activate
                           </button>
                           <button
                             onClick={() => updateStatus(selectedUser.id, 'pending')}

@@ -180,6 +180,23 @@ export default function LoginPage() {
               Sign up for free
             </Link>
           </div>
+
+          <div className="mt-3 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  Object.keys(window.localStorage)
+                    .filter((k) => k.startsWith('sb-') || k.includes('supabase.auth'))
+                    .forEach((k) => window.localStorage.removeItem(k));
+                } catch {}
+                window.location.reload();
+              }}
+              className="text-xs text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400 underline transition-colors"
+            >
+              Having trouble logging in? Reset session
+            </button>
+          </div>
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-500">
