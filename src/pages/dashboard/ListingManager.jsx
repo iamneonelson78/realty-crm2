@@ -207,7 +207,47 @@ export default function ListingManager() {
         </button>
       </div>
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-x-auto print:shadow-none print:border-none">
+      {/* Mobile: card view */}
+      <div className="flex flex-col gap-3 sm:hidden">
+        {loading ? (
+          <p className="py-10 text-center text-gray-400 text-sm">Loading...</p>
+        ) : loadError ? (
+          <p className="py-10 text-center text-red-500 text-sm">{loadError}</p>
+        ) : filtered.length === 0 ? (
+          <p className="py-10 text-center text-gray-400 text-sm">
+            {listings.length === 0 ? 'No listings yet. Tap "+ Add Listing" to get started.' : 'No listings match your filters.'}
+          </p>
+        ) : filtered.map((l) => (
+          <div
+            key={l.id}
+            className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center gap-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-800/50 transition-colors"
+            onClick={() => setViewListing(l)}
+          >
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{l.title}</p>
+              <p className="text-brand-600 dark:text-brand-400 font-medium text-sm mt-0.5">
+                {l.rent != null ? `PHP ${Number(l.rent).toLocaleString()}/mo` : <span className="text-gray-400 font-normal">No rent set</span>}
+              </p>
+              <div className="mt-1.5">
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_COLOR[l.status] || STATUS_COLOR.archived}`}>
+                  {l.status || 'unknown'}
+                </span>
+              </div>
+            </div>
+            <div onClick={(e) => e.stopPropagation()}>
+              <ListingRowMenu
+                onView={() => setViewListing(l)}
+                onEdit={() => { setFormListing(l); setShowForm(true); }}
+                onPost={() => setPostListing(l)}
+                onDelete={() => handleDelete(l.id)}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden sm:block bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-x-auto print:shadow-none print:border-none">
         <table className="w-full text-left text-sm min-w-[700px]">
           <thead className="bg-gray-50 dark:bg-gray-900/60 text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
             <tr>
