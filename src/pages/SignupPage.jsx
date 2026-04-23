@@ -4,6 +4,7 @@ import { Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle } from 'lucide-r
 import Confetti from 'react-confetti';
 import Logo from '../components/Logo';
 import { useAuth } from '../context/AuthContext';
+import FeedbackWidget from '../components/FeedbackWidget';
 
 export default function SignupPage() {
   const [name, setName] = useState('');
@@ -189,5 +190,6 @@ export default function SignupPage() {
         </p>
       </div>
     </div>
+    <FeedbackWidget />
   );
 }

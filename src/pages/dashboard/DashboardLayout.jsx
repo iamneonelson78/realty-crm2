@@ -43,14 +43,14 @@ export default function DashboardLayout() {
   }, []);
 
   const showConnectionsNav = connectionsEnabled || import.meta.env.DEV;
-  const isPipelinePage = location.pathname.startsWith('/dashboard/pipeline');
+  const isPipelinePage = location.pathname === '/pipeline';
 
   const navItems = [
     { path: '/dashboard', exact: true, icon: <LayoutDashboard className="w-5 h-5 flex-shrink-0" />, label: 'Dashboard' },
-    { path: '/dashboard/pipeline', exact: false, icon: <KanbanSquare className="w-5 h-5 flex-shrink-0" />, label: 'Pipeline' },
-    { path: '/dashboard/listings', exact: false, icon: <Building className="w-5 h-5 flex-shrink-0" />, label: 'My Listings' },
+    { path: '/pipeline', exact: true, icon: <KanbanSquare className="w-5 h-5 flex-shrink-0" />, label: 'Pipeline' },
+    { path: '/listings', exact: true, icon: <Building className="w-5 h-5 flex-shrink-0" />, label: 'My Listings' },
     ...(showConnectionsNav
-      ? [{ path: '/dashboard/connections', exact: false, icon: <Zap className="w-5 h-5 flex-shrink-0" />, label: 'Connections' }]
+      ? [{ path: '/connections', exact: true, icon: <Zap className="w-5 h-5 flex-shrink-0" />, label: 'Connections' }]
       : []),
   ];
 

@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Users, LayoutDashboard, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, LayoutDashboard, MessageSquare, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import TopHeader from '../../components/TopHeader';
 import Watermark from '../../components/Watermark';
@@ -16,6 +16,7 @@ export default function AdminLayout() {
   const navItems = [
     { path: '/admin', exact: true, icon: <LayoutDashboard className="w-5 h-5 flex-shrink-0" />, label: 'Dashboard' },
     { path: '/admin/access', exact: false, icon: <Users className="w-5 h-5 flex-shrink-0" />, label: 'Access Control' },
+    { path: '/admin/feedback', exact: false, icon: <MessageSquare className="w-5 h-5 flex-shrink-0" />, label: 'Feedback' },
   ];
 
   useEffect(() => {

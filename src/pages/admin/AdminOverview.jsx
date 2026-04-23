@@ -1,26 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Database, ArrowUpRight, Clock } from 'lucide-react';
+import { Users, Database, ArrowUpRight, Clock, MessageSquare } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 
 export default function AdminOverview() {
-  const [counts, setCounts] = useState({ agents: 0, leads: 0, pending: 0 });
+  const [counts, setCounts] = useState({ agents: 0, leads: 0, pending: 0, openFeedback: 0 });
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [agentsRes, leadsRes, pendingRes, recentRes] = await Promise.all([
+        const [agentsRes, leadsRes, pendingRes, recentRes, feedbackRes] = await Promise.all([
           supabase.from('profiles').select('id', { count: 'exact' }).eq('role', 'agent'),
           supabase.from('leads').select('id', { count: 'exact' }),
           supabase.from('profiles').select('id', { count: 'exact' }).eq('status', 'pending'),
           supabase.from('profiles').select('id, name, status, created_at').order('created_at', { ascending: false }).limit(5),
+          supabase.from('feedback').select('id', { count: 'exact' }).eq('status', 'open'),
         ]);
         setCounts({
           agents: agentsRes.count ?? 0,
           leads: leadsRes.count ?? 0,
           pending: pendingRes.count ?? 0,
+          openFeedback: feedbackRes.count ?? 0,
         });
         setActivity(recentRes.data ?? []);
       } catch (e) {
@@ -54,6 +56,13 @@ export default function AdminOverview() {
       bg: 'bg-amber-50 dark:bg-amber-900/20',
       to: '/admin/access?status=pending',
     },
+    {
+      label: 'Open Feedback',
+      value: counts.openFeedback,
+      icon: <MessageSquare className="text-rose-500 dark:text-rose-400 w-5 h-5" />,
+      bg: 'bg-rose-50 dark:bg-rose-900/20',
+      to: '/admin/feedback',
+    },
   ];
 
   return (
@@ -63,7 +72,7 @@ export default function AdminOverview() {
         <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">High level system metrics and health.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {metrics.map((m, i) => {
           const cardInner = (
             <>

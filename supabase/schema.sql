@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS public.listings CASCADE;
 DROP TABLE IF EXISTS public.leads CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
 DROP TABLE IF EXISTS public.feedback CASCADE;
+DROP TABLE IF EXISTS public.listing_templates CASCADE;
 
 -- Enable UUID Extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -53,6 +54,13 @@ CREATE TABLE public.listings (
     location TEXT,
     beds TEXT,
     rules TEXT,
+    category TEXT,
+    status TEXT CHECK (status IN ('available','reserved','rented','archived')) DEFAULT 'available',
+    description TEXT,
+    bathrooms TEXT,
+    floor_area TEXT,
+    amenities TEXT,
+    photo_urls JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -77,7 +85,24 @@ CREATE TABLE public.feedback (
   category    TEXT,
   rating      SMALLINT CHECK (rating BETWEEN 1 AND 5),
   message     TEXT NOT NULL,
+  status      TEXT CHECK (status IN ('open','ongoing','replied','closed')) DEFAULT 'open',
+  email       TEXT,
+  page_url    TEXT,
+  user_agent  TEXT,
+  attachments JSONB DEFAULT '[]'::jsonb,
+  admin_reply TEXT,
+  replied_at  TIMESTAMP WITH TIME ZONE,
+  updated_at  TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   created_at  TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 6. Create Listing Templates Table (cross-device persistence)
+CREATE TABLE public.listing_templates (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  agent_id   UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  body       TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 6. Enable Row Level Security (RLS)
@@ -86,13 +111,34 @@ ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.listings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.listing_templates ENABLE ROW LEVEL SECURITY;
 
 -- Basic Policies (Open access for rapid development)
 CREATE POLICY "Enable all actions for authenticated users" ON public.profiles FOR ALL TO authenticated USING (true);
 CREATE POLICY "Enable all actions for authenticated users" ON public.leads FOR ALL TO authenticated USING (true);
 CREATE POLICY "Enable all actions for authenticated users" ON public.listings FOR ALL TO authenticated USING (true);
 CREATE POLICY "Enable all actions for authenticated users" ON public.connections FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert feedback" ON public.feedback FOR INSERT TO authenticated WITH CHECK (true);
+
+-- Feedback: allow anonymous inserts (widget on /login, /signup), admins read/update
+CREATE POLICY "Anyone can insert feedback" ON public.feedback
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+CREATE POLICY "Admins read feedback" ON public.feedback
+  FOR SELECT TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+
+CREATE POLICY "Admins update feedback" ON public.feedback
+  FOR UPDATE TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+
+-- Listing templates: agents manage their own
+CREATE POLICY "Agents manage own templates" ON public.listing_templates
+  FOR ALL TO authenticated
+  USING (agent_id = auth.uid()) WITH CHECK (agent_id = auth.uid());
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS listings_agent_category_idx ON public.listings (agent_id, category);
+CREATE INDEX IF NOT EXISTS listings_agent_status_idx ON public.listings (agent_id, status);
 
 -- 7. Utility Functions & Triggers
 

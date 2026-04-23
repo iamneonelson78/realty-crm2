@@ -18,3 +18,46 @@
     @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl dark:bg-slate-900/70 dark:border-slate-800/50;
   }
 }
+
+@media print {
+  /* Hide all navigation chrome */
+  nav, aside, header,
+  [class*="sidebar"],
+  [class*="Navbar"],
+  [class*="TopHeader"],
+  [class*="toolbar"],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Remove shadows, backgrounds, rounded corners on table */
+  .print\:shadow-none { box-shadow: none !important; }
+  .print\:border-none { border: none !important; }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }
+  tr    { page-break-inside: avoid; }
+
+  th, td {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    color: black !important;
+  }
+  th { background: #f3f4f6 !important; font-weight: 600; }
+
+  /* Page layout */
+  @page {
+    margin: 1cm;
+    size: A4 landscape;
+  }
+}

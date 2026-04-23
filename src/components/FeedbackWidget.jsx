@@ -1,7 +1,20 @@
-import { useState } from 'react';
-import { MessageSquarePlus, X, Send, Bug, HelpCircle, Lightbulb, MoreHorizontal, Star, CheckCircle2 } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { MessageSquarePlus, X, Send, Bug, HelpCircle, Lightbulb, MoreHorizontal, Star, CheckCircle2, Paperclip, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from '../context/ToastContext';
+
+const MAX_FILES = 3;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 const categoryConfig = {
   Bug:        { icon: Bug,            color: 'text-rose-500',   active: 'bg-rose-50 border-rose-300 text-rose-700 dark:bg-rose-900/30 dark:border-rose-700 dark:text-rose-400' },
@@ -12,46 +25,127 @@ const categoryConfig = {
 
 export default function FeedbackWidget() {
   const toast = useToast();
+  const fileInputRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
   const [category, setCategory] = useState('Suggestion');
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [message, setMessage] = useState('');
+  const [email, setEmail] = useState('');
+  const [attachments, setAttachments] = useState([]); // [{ file, preview }]
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(null);
+  const [isAnon, setIsAnon] = useState(false);
+
+  const handleOpen = async () => {
+    setIsOpen(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    setIsAnon(!user);
+  };
 
   const handleClose = () => {
     setIsOpen(false);
     setTimeout(() => {
       setSubmitted(false);
       setMessage('');
+      setEmail('');
       setRating(0);
       setCategory('Suggestion');
       setError(null);
+      setAttachments((prev) => {
+        prev.forEach((item) => { if (item.preview) URL.revokeObjectURL(item.preview); });
+        return [];
+      });
+      setIsAnon(false);
     }, 300);
+  };
+
+  const handleFileChange = (e) => {
+    const incoming = Array.from(e.target.files || []);
+    const slots = MAX_FILES - attachments.length;
+    const allowed = incoming.slice(0, slots);
+    const rejected = [];
+
+    const valid = allowed.filter((f) => {
+      if (!ALLOWED_TYPES.includes(f.type)) { rejected.push(`${f.name}: unsupported type`); return false; }
+      if (f.size > MAX_FILE_SIZE) { rejected.push(`${f.name}: exceeds 5 MB`); return false; }
+      return true;
+    });
+
+    if (rejected.length) toast.warning(rejected.join(', '));
+    if (valid.length === 0) return;
+
+    const newItems = valid.map((f) => ({
+      file: f,
+      preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
+    }));
+    setAttachments((prev) => [...prev, ...newItems]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments((prev) => {
+      const next = [...prev];
+      const removed = next.splice(index, 1)[0];
+      if (removed?.preview) URL.revokeObjectURL(removed.preview);
+      return next;
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+
+    if (isAnon && !email.trim()) {
+      setError('Please provide your email so we can follow up.');
+      setSubmitting(false);
+      return;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
-    const { error: insertError } = await supabase.from('feedback').insert({
-      user_id: user?.id ?? null,
+
+    const encodedFiles = await Promise.all(
+      attachments.map(async ({ file }) => ({
+        name: file.name,
+        mime: file.type,
+        data: await fileToBase64(file),
+      }))
+    );
+
+    const payload = {
       category,
       rating: rating || null,
       message,
-    });
-    setSubmitting(false);
-    if (insertError) {
-      setError('Failed to send feedback. Please try again.');
-      toast.error('Failed to send feedback. Please try again.');
-      return;
+      email: email.trim() || null,
+      page_url: window.location.pathname,
+      user_agent: navigator.userAgent,
+      userId: user?.id ?? null,
+      files: encodedFiles,
+    };
+
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Request failed (${res.status})`);
+      }
+
+      setSubmitted(true);
+      toast.success('Feedback submitted. Thank you!');
+      setTimeout(() => handleClose(), 3000);
+    } catch (err) {
+      setError(err.message || 'Failed to send feedback. Please try again.');
+      toast.error(err.message || 'Failed to send feedback. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitted(true);
-    toast.success('Feedback submitted. Thank you.');
-    setTimeout(() => handleClose(), 3000);
   };
 
   return (
@@ -59,7 +153,7 @@ export default function FeedbackWidget() {
       {/* Tab trigger */}
       <div className={`fixed right-0 top-1/2 -translate-y-1/2 z-40 transform transition-transform duration-300 ${isOpen ? 'translate-x-full' : 'translate-x-[68%] hover:translate-x-0'}`}>
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={handleOpen}
           className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white pl-3 pr-4 py-2.5 rounded-l-xl shadow-lg transition-colors"
         >
           <MessageSquarePlus className="w-4 h-4 flex-shrink-0" />
@@ -81,7 +175,7 @@ export default function FeedbackWidget() {
           style={{ width: '22rem' }}>
 
           {/* Header */}
-          <div className="bg-gradient-to-br from-brand-500 to-brand-700 px-6 py-6">
+          <div className="bg-gradient-to-br from-brand-500 to-brand-700 px-6 py-6 flex-shrink-0">
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -149,16 +243,81 @@ export default function FeedbackWidget() {
               </div>
             </div>
 
+            {/* Email (required when anonymous) */}
+            {isAnon && (
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                  Your Email <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="email"
+                  required={isAnon}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="so we can follow up"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors"
+                />
+              </div>
+            )}
+
             {/* Message */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Message</label>
               <textarea
-                required rows={5}
+                required rows={4}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors"
                 placeholder="Tell us what's on your mind…"
               />
+            </div>
+
+            {/* Attachments */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Attachments <span className="normal-case font-normal">(max {MAX_FILES})</span>
+                </label>
+                {attachments.length < MAX_FILES && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-colors"
+                  >
+                    <Paperclip className="w-3 h-3" /> Attach
+                  </button>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept={ALLOWED_TYPES.join(',')}
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              {attachments.length > 0 && (
+                <div className="space-y-2">
+                  {attachments.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-lg px-3 py-2 border border-slate-200 dark:border-slate-700">
+                      {item.preview ? (
+                        <img src={item.preview} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                      ) : (
+                        <Paperclip className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                      )}
+                      <span className="flex-1 text-xs text-slate-700 dark:text-slate-300 truncate">{item.file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(i)}
+                        className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">Images or PDF · max 5 MB each</p>
             </div>
 
             {error && (

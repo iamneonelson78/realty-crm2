@@ -5,6 +5,7 @@ import Logo from '../components/Logo';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { supabase } from '../lib/supabaseClient';
+import FeedbackWidget from '../components/FeedbackWidget';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -268,5 +269,6 @@ export default function LoginPage() {
         </div>
       )}
     </div>
+    <FeedbackWidget />
   );
 }

@@ -16,6 +16,7 @@ import OnboardingFlow from './pages/OnboardingFlow';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminOverview from './pages/admin/AdminOverview';
 import AdminAccess from './pages/admin/AdminAccess';
+import AdminFeedback from './pages/admin/AdminFeedback';
 
 // Dashboard Pages
 import DashboardLayout from './pages/dashboard/DashboardLayout';
@@ -49,19 +50,25 @@ function App() {
           }>
             <Route index element={<AdminOverview />} />
             <Route path="access" element={<AdminAccess />} />
+            <Route path="feedback" element={<AdminFeedback />} />
           </Route>
 
-          {/* Agent Dashboard Routes */}
-          <Route path="/dashboard" element={
+          {/* Agent Dashboard — pathless layout so children get flat URLs */}
+          <Route element={
             <ProtectedRoute allowedRole="agent">
               <DashboardLayout />
             </ProtectedRoute>
           }>
-            <Route index element={<Overview />} />
-            <Route path="pipeline" element={<PipelineView />} />
-            <Route path="listings" element={<ListingManager />} />
-            <Route path="connections" element={<Connections />} />
+            <Route path="/dashboard" element={<Overview />} />
+            <Route path="/pipeline" element={<PipelineView />} />
+            <Route path="/listings" element={<ListingManager />} />
+            <Route path="/connections" element={<Connections />} />
           </Route>
+
+          {/* Legacy redirects — old bookmarks / emails still work */}
+          <Route path="/dashboard/pipeline" element={<Navigate to="/pipeline" replace />} />
+          <Route path="/dashboard/listings" element={<Navigate to="/listings" replace />} />
+          <Route path="/dashboard/connections" element={<Navigate to="/connections" replace />} />
               </Routes>
             </Router>
           </AuthProvider>

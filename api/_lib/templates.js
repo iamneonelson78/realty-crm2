@@ -11,6 +11,7 @@ const TEXT = '#0F172A';
 const MUTED = '#475569';
 const BORDER = '#E2E8F0';
 const BG = '#F8FAFC';
+const APP_URL = process.env.APP_URL || process.env.VITE_APP_URL || 'https://realty-crm2.vercel.app';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -38,8 +39,11 @@ function shell({ title, intro, bodyHtml, ctaText, ctaUrl, footerNote }) {
     <tr><td align="center">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border:1px solid ${BORDER};border-radius:14px;overflow:hidden;">
         <tr><td style="padding:24px 28px;border-bottom:1px solid ${BORDER};">
-          <div style="font-size:20px;font-weight:800;letter-spacing:-0.01em;">
-            Realty <span style="color:${BRAND_DARK};">CRM</span>
+          <div style="font-size:0;line-height:0;">
+            <img src="${APP_URL}/logo.png" alt="Realty CRM" width="40" height="40" style="vertical-align:middle;border:0;border-radius:8px;">
+            <span style="font-size:20px;font-weight:800;letter-spacing:-0.01em;vertical-align:middle;margin-left:10px;">
+              Realty <span style="color:${BRAND_DARK};">CRM</span>
+            </span>
           </div>
         </td></tr>
         <tr><td style="padding:28px;">
@@ -93,13 +97,58 @@ export function adminNewSignupEmail({ name, email, approveUrl }) {
 export function userApprovedEmail({ name, loginUrl }) {
   const safeName = escapeHtml(name || 'there');
   return {
-    subject: 'Your Realty CRM account is approved',
+    subject: '🎉 Your Realty CRM account is approved — you\'re in!',
     html: shell({
-      title: `You're in, ${safeName}!`,
-      intro: 'Your Realty CRM account has been approved. You can now log in and start managing your pipeline.',
-      ctaText: 'Log in to Realty CRM',
-      ctaUrl: loginUrl,
+      title: `Welcome aboard, ${safeName}!`,
+      intro: `Great news — your Realty CRM account has been approved! You're all set to start closing deals and managing your pipeline like a pro.`,
+      bodyHtml: `
+        <tr><td style="padding:14px 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${BORDER};border-radius:10px;">
+            <tr><td style="padding:14px 16px;">
+              <p style="margin:0 0 8px 0;font-size:13px;font-weight:700;color:${TEXT};">Here's what to do next:</p>
+              <ul style="margin:0;padding-left:20px;font-size:13px;color:${MUTED};line-height:2;">
+                <li><strong>Connect Messenger</strong> — link your Facebook Messenger handle so leads can reach you directly.</li>
+                <li><strong>Add your first listing</strong> — upload a property and generate a stunning FB post in seconds.</li>
+                <li><strong>Import leads</strong> — bring in your existing contacts and start tracking them through the pipeline.</li>
+              </ul>
+            </td></tr>
+          </table>
+        </td></tr>`,
+      ctaText: 'Go to your Dashboard',
+      ctaUrl: loginUrl || `${APP_URL}/dashboard`,
       footerNote: 'If you did not request this account, please ignore this email or reply to let us know.',
+    }),
+  };
+}
+
+/**
+ * User gets this when an admin replies to their feedback submission.
+ */
+export function userFeedbackReplyEmail({ name, originalMessage, adminReply }) {
+  const safeName = escapeHtml(name || 'there');
+  const safeOriginal = escapeHtml(originalMessage || '(original message not available)');
+  const safeReply = escapeHtml(adminReply || '');
+  return {
+    subject: 'Re: Your feedback to Realty CRM',
+    html: shell({
+      title: `Hi ${safeName}, we've replied to your feedback`,
+      intro: 'Thank you for taking the time to send us feedback. Here's our response:',
+      bodyHtml: `
+        <tr><td style="padding:8px 0 16px 0;">
+          <p style="margin:0 0 6px 0;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:${MUTED};">Your original message</p>
+          <div style="background:#F1F5F9;border-left:3px solid ${BORDER};padding:12px 14px;border-radius:0 8px 8px 0;font-size:13px;color:${MUTED};line-height:1.6;">
+            ${safeOriginal}
+          </div>
+        </td></tr>
+        <tr><td style="padding:8px 0 16px 0;">
+          <p style="margin:0 0 6px 0;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:${TEXT};">Our reply</p>
+          <div style="background:#F0FDFF;border-left:3px solid ${BRAND};padding:12px 14px;border-radius:0 8px 8px 0;font-size:13px;color:${TEXT};line-height:1.6;">
+            ${safeReply}
+          </div>
+        </td></tr>`,
+      ctaText: 'Send another message',
+      ctaUrl: `${APP_URL}/dashboard`,
+      footerNote: 'You received this email because you submitted feedback to Realty CRM. If you have further questions, you can reply via the feedback widget in the app.',
     }),
   };
 }
